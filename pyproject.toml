@@ -85,10 +85,12 @@ sequence = ["test-unit", "test-e2e"]
 [tool.poe.tasks.test-unit]
 help = "Run unit tests"
 cmd = "pytest backend/tests/unit"
+envfile = ".env.tests.unit.secret"
 
 [tool.poe.tasks.test-e2e]
 help = "Run end-to-end tests against the deployed API"
 cmd = "pytest backend/tests/e2e"
+envfile = ".env.tests.e2e.secret"
 
 [tool.pyright]
 include = ["backend"]
