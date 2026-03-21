@@ -64,7 +64,6 @@ async def run_test_mode(command_text: str, config: dict) -> None:
     if command:
         response = await process_command(command, args, lms_client, llm_client)
     else:
-        # Natural language query: use LLM with tools
         if llm_client:
             response = await llm_client.answer_with_tools(command_text, lms_client)
         else:
@@ -110,7 +109,6 @@ async def run_telegram_mode(config: dict) -> None:
         BotCommand(command="scores", description="Get scores for a lab (e.g., /scores lab-04)"),
     ], scope=BotCommandScopeDefault())
 
-    # Inline keyboard for main menu
     def main_keyboard():
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📋 Labs", callback_data="labs"),
@@ -146,7 +144,6 @@ async def run_telegram_mode(config: dict) -> None:
         text = await handle_scores(lab, lms_client)
         await message.answer(text, reply_markup=main_keyboard())
 
-    # Handle callback queries (inline buttons)
     @dp.callback_query()
     async def handle_callback(callback_query):
         data = callback_query.data
@@ -163,7 +160,6 @@ async def run_telegram_mode(config: dict) -> None:
         await callback_query.message.answer(text, reply_markup=main_keyboard())
         await callback_query.answer()
 
-    # Handle plain text messages (natural language)
     @dp.message()
     async def handle_message(message: Message):
         user_text = message.text or ""

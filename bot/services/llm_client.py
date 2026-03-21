@@ -121,13 +121,9 @@ class LLMClient:
         ]
 
     async def classify_intent(self, user_input: str, lms_client=None) -> Optional[str]:
-        """Classify user intent and return a command string (legacy). For Task 3 we use tools."""
-        # We'll use the tool-based approach. This method may be deprecated.
-        # But we'll keep for compatibility. For new implementation, we'll call a method that uses tools.
         return None
 
     async def execute_tool_call(self, tool_name: str, args: dict, lms_client) -> str:
-        """Execute a tool call using LMS client and return formatted result."""
         if tool_name == "get_labs":
             items = await lms_client.get("/items/")
             labs = [item["title"] for item in items if item.get("type") == "lab"]
@@ -191,9 +187,7 @@ class LLMClient:
             return f"Unknown tool: {tool_name}"
 
     async def answer_with_tools(self, user_input: str, lms_client) -> str:
-        """Send user input to LLM, let it decide which tool to call, execute tool, and return answer."""
         messages = [{"role": "user", "content": user_input}]
-        # Prepare request
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -212,13 +206,10 @@ class LLMClient:
             message = choice["message"]
 
             if "tool_calls" in message and message["tool_calls"]:
-                # Execute the first tool call (for simplicity)
                 tool_call = message["tool_calls"][0]
                 tool_name = tool_call["function"]["name"]
                 args = json.loads(tool_call["function"]["arguments"])
                 result = await self.execute_tool_call(tool_name, args, lms_client)
-                # Optionally, we could ask LLM to format result into a nice answer, but for now return raw.
                 return result
             else:
-                # If no tool call, just return the message content
                 return message.get("content", "Sorry, I didn't understand.")
