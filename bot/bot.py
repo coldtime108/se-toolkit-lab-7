@@ -13,12 +13,14 @@ import asyncio
 import argparse
 from typing import Optional
 
-from handlers.start import handle_start
-from handlers.help import handle_help
-from handlers.health import handle_health
-from handlers.labs import handle_labs
-from handlers.scores import handle_scores
-from handlers.unknown import handle_unknown
+from handlers import (
+    handle_start,
+    handle_help,
+    handle_health,
+    handle_labs,
+    handle_scores,
+    handle_unknown
+)
 
 from config import load_config
 from services.lms_client import LMSClient

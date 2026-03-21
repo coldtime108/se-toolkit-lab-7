@@ -1,2 +1,9 @@
-async def handle_labs(lms_client=None):
-    return "📋 Доступные лабораторные работы:\n- lab-01\n- lab-02\n- lab-03\n- lab-04\n- lab-05\n- lab-06"
+async def handle_labs(lms_client):
+    try:
+        items = await lms_client.get("/items/")
+        labs = [item["title"] for item in items if item.get("type") == "lab"]
+        if not labs:
+            return "⚠️ No labs found."
+        return "📋 Available labs:\n" + "\n".join(f"- {title}" for title in labs)
+    except Exception as e:
+        return f"❌ Failed to fetch labs: {e}"
