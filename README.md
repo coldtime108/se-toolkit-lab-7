@@ -100,3 +100,4 @@ By the end of this lab, you should be able to say:
 ### Build and Run
 ```bash
 docker compose --env-file .env.docker.secret up --build -d
+<- Complex questions require step‑by‑step instructions in system Task 4: containerization -->
