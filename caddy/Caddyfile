@@ -1,36 +1,3 @@
-# See wiki/caddy.md
-
-:{$CADDY_CONTAINER_PORT} {
-    handle /items* {
-        reverse_proxy http://backend:{$BACKEND_CONTAINER_PORT}
-    }
-    handle /learners* {
-        reverse_proxy http://backend:{$BACKEND_CONTAINER_PORT}
-    }
-    handle /interactions* {
-        reverse_proxy http://backend:{$BACKEND_CONTAINER_PORT}
-    }
-    handle /pipeline* {
-        reverse_proxy http://backend:{$BACKEND_CONTAINER_PORT}
-    }
-    handle /analytics* {
-        reverse_proxy http://backend:{$BACKEND_CONTAINER_PORT}
-    }
-    handle_path /utils/qwen-code-api* {
-        reverse_proxy {$QWEN_CODE_API_URL}
-    }
-    handle_path /utils/pgadmin* {
-        reverse_proxy http://pgadmin:{$CONST_PGADMIN_CONTAINER_PORT}
-    }
-    handle /docs* {
-        reverse_proxy http://backend:{$BACKEND_CONTAINER_PORT}
-    }
-    handle /openapi.json {
-        reverse_proxy http://backend:{$BACKEND_CONTAINER_PORT}
-    }
-    handle {
-        root * /srv
-        try_files {path} /index.html
-        file_server
-    }
+:80 {
+    reverse_proxy backend:8000
 }
