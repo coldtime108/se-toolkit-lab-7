@@ -2,11 +2,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Устанавливаем зависимости (aiogram, httpx, python-dotenv)
-RUN pip install --upgrade pip && \
-    pip install aiogram httpx python-dotenv
+# Копируем только файлы зависимостей
+COPY bot/pyproject.toml bot/uv.lock /app/
 
-# Копируем код бота
+# Устанавливаем зависимости через pip (без uv)
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir aiogram httpx python-dotenv
+
+# Копируем весь код бота
 COPY bot/ /app/
 
 CMD ["python", "bot.py"]
