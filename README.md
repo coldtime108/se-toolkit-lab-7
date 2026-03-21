@@ -91,3 +91,121 @@ By the end of this lab, you should be able to say:
 2. [Backend Integration](./lab/tasks/required/task-2.md) — P0: slash commands + real data
 3. [Intent-Based Natural Language Routing](./lab/tasks/required/task-3.md) — P1: LLM tool use
 4. [Containerize and Document](./lab/tasks/required/task-4.md) — P3: containerize + deploy
+
+---
+
+## Implementation Status
+
+### ✅ Task 1: Plan and Scaffold
+
+- [x] `bot/` directory structure created
+- [x] CLI test mode with `--test` flag
+- [x] Handlers separated from Telegram transport
+- [x] `PLAN.md` with development roadmap
+
+### ✅ Task 2: Backend Integration
+
+- [x] `/start` — welcome message
+- [x] `/help` — command list
+- [x] `/health` — backend status check
+- [x] `/labs` — list available labs
+- [x] `/scores <lab>` — per-lab scores
+- [x] Error handling with friendly messages
+
+### ✅ Task 3: Intent-Based Natural Language Routing
+
+- [x] 9 LLM tool schemas for function calling
+- [x] LLM-based intent classification (no regex)
+- [x] Inline keyboard buttons for quick actions
+- [x] Natural language query support
+
+### ✅ Task 4: Containerize and Document
+
+- [x] `bot/Dockerfile` created
+- [x] Bot service added to `docker-compose.yml`
+- [x] Environment variables configured
+- [x] Deployment documentation written
+
+---
+
+## Quick Start
+
+### Test Mode (Local)
+
+```bash
+cd bot
+uv sync
+uv run bot.py --test "/start"
+uv run bot.py --test "what labs are available"
+```
+
+### Deploy on VM
+
+```bash
+# SSH to VM
+ssh coldtime108@10.93.26.30
+
+# Navigate to repo
+cd ~/se-toolkit-lab-7
+
+# Configure environment
+cp .env.docker.example .env.docker.secret
+nano .env.docker.secret  # Fill in BOT_TOKEN, LLM_API_KEY, etc.
+
+# Deploy with Docker Compose
+docker compose --env-file .env.docker.secret up --build -d
+
+# Check status
+docker compose --env-file .env.docker.secret logs bot
+```
+
+### Test in Telegram
+
+1. Open your bot: `t.me/YOUR_BOT_NAME`
+2. Send `/start` to see welcome message with inline buttons
+3. Try natural language queries:
+   - "What labs are available?"
+   - "Show me scores for lab 4"
+   - "Is the system working?"
+
+---
+
+## Documentation
+
+- **[Bot Deployment Guide](./bot/DEPLOYMENT.md)** — Full deployment instructions
+- **[PLAN.md](./bot/PLAN.md)** — Development plan and architecture
+- **[Testing Guide](./bot/TESTING.md)** — Testing instructions
+
+---
+
+## Architecture
+
+### Tool Calling Flow
+
+```
+User Message
+    ↓
+LLM (Intent Classification)
+    ↓
+Tool Call (get_health, list_labs, get_scores, etc.)
+    ↓
+LMS Backend API
+    ↓
+Formatted Response
+    ↓
+Telegram User
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_health` | Check backend status |
+| `list_labs` | List all labs |
+| `get_scores` | Get scores for a lab |
+| `get_analytics` | Get analytics data |
+| `get_tasks` | Get tasks for a lab |
+| `get_learners` | Get student list |
+| `get_submissions` | Get submission stats |
+| `get_interactions` | Get interaction data |
+| `sync_data` | Trigger ETL sync |
