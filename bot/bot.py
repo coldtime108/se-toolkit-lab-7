@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""
-Telegram Bot for LMS Backend Interaction
-
-Usage:
-    Normal mode:  uv run bot.py
-    Test mode:    uv run bot.py --test "/command"
-
-Test mode prints the response to stdout without connecting to Telegram.
-"""
 import sys
 import asyncio
 import argparse
@@ -28,7 +19,6 @@ from services.llm_client import LLMClient
 
 
 def parse_command(text: str) -> tuple:
-    """Parse a command text into command and arguments."""
     text = text.strip()
     if text.startswith("/"):
         parts = text.split(maxsplit=1)
@@ -39,7 +29,6 @@ def parse_command(text: str) -> tuple:
 
 
 async def process_command(command: str, args: str, lms_client: Optional[LMSClient], llm_client: Optional[LLMClient]) -> str:
-    """Process a command and return the response."""
     if command == "/start":
         return await handle_start(lms_client)
     elif command == "/help":
@@ -51,19 +40,15 @@ async def process_command(command: str, args: str, lms_client: Optional[LMSClien
     elif command == "/scores":
         return await handle_scores(args, lms_client)
     else:
-        # Unknown command - return helpful message
         return f"⚠️ Неизвестная команда: {command}\n\nИспользуйте /help для списка команд."
 
 
 async def run_test_mode(command_text: str, config: dict) -> None:
-    """Run in test mode - process command and print response."""
-    # Always create LMS client for test mode
     lms_client = LMSClient(
         base_url=config["lms_api_url"],
         api_key=config["lms_api_key"]
     )
 
-    # LLM client is optional
     llm_client = None
     if config.get("llm_api_key") and config.get("llm_api_base_url"):
         try:
@@ -76,23 +61,25 @@ async def run_test_mode(command_text: str, config: dict) -> None:
             llm_client = None
 
     command, args = parse_command(command_text)
-
     if command:
         response = await process_command(command, args, lms_client, llm_client)
     else:
-        response = "⚠️ Не удалось распознать команду. Используйте /help для списка команд."
-
+        # Natural language query: use LLM with tools
+        if llm_client:
+            response = await llm_client.answer_with_tools(command_text, lms_client)
+        else:
+            response = "⚠️ LLM not configured. Use slash commands."
     print(response)
 
 
 async def run_telegram_mode(config: dict) -> None:
-    """Run the Telegram bot."""
     from aiogram import Bot, Dispatcher
     from aiogram.filters import Command, CommandStart
-    from aiogram.types import Message
+    from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+    from aiogram.types import BotCommand, BotCommandScopeDefault
 
     if not config.get("bot_token"):
-        print("Error: BOT_TOKEN not set. Please configure .env.bot.secret")
+        print("Error: BOT_TOKEN not set.")
         sys.exit(1)
 
     bot = Bot(token=config["bot_token"])
@@ -114,69 +101,94 @@ async def run_telegram_mode(config: dict) -> None:
         except Exception:
             llm_client = None
 
+    # Set bot commands menu
+    await bot.set_my_commands([
+        BotCommand(command="start", description="Start the bot"),
+        BotCommand(command="help", description="Show help"),
+        BotCommand(command="health", description="Check backend health"),
+        BotCommand(command="labs", description="List all labs"),
+        BotCommand(command="scores", description="Get scores for a lab (e.g., /scores lab-04)"),
+    ], scope=BotCommandScopeDefault())
+
+    # Inline keyboard for main menu
+    def main_keyboard():
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Labs", callback_data="labs"),
+             InlineKeyboardButton(text="📊 Scores", callback_data="scores")],
+            [InlineKeyboardButton(text="🏥 Health", callback_data="health"),
+             InlineKeyboardButton(text="❓ Help", callback_data="help")]
+        ])
+
     @dp.message(CommandStart())
     async def cmd_start(message: Message):
-        response = await handle_start(lms_client)
-        await message.answer(response)
+        text = await handle_start(lms_client)
+        await message.answer(text, reply_markup=main_keyboard())
 
     @dp.message(Command("help"))
     async def cmd_help(message: Message):
-        response = await handle_help(lms_client)
-        await message.answer(response)
+        text = await handle_help(lms_client)
+        await message.answer(text, reply_markup=main_keyboard())
 
     @dp.message(Command("health"))
     async def cmd_health(message: Message):
-        response = await handle_health(lms_client)
-        await message.answer(response)
+        text = await handle_health(lms_client)
+        await message.answer(text, reply_markup=main_keyboard())
 
     @dp.message(Command("labs"))
     async def cmd_labs(message: Message):
-        response = await handle_labs(lms_client)
-        await message.answer(response)
+        text = await handle_labs(lms_client)
+        await message.answer(text, reply_markup=main_keyboard())
 
     @dp.message(Command("scores"))
     async def cmd_scores(message: Message):
-        lab_query = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""
-        response = await handle_scores(lab_query, lms_client)
-        await message.answer(response)
+        parts = message.text.split(maxsplit=1)
+        lab = parts[1] if len(parts) > 1 else ""
+        text = await handle_scores(lab, lms_client)
+        await message.answer(text, reply_markup=main_keyboard())
 
+    # Handle callback queries (inline buttons)
+    @dp.callback_query()
+    async def handle_callback(callback_query):
+        data = callback_query.data
+        if data == "labs":
+            text = await handle_labs(lms_client)
+        elif data == "scores":
+            text = "Please send /scores <lab> (e.g., /scores lab-04)"
+        elif data == "health":
+            text = await handle_health(lms_client)
+        elif data == "help":
+            text = await handle_help(lms_client)
+        else:
+            text = "Unknown command"
+        await callback_query.message.answer(text, reply_markup=main_keyboard())
+        await callback_query.answer()
+
+    # Handle plain text messages (natural language)
     @dp.message()
     async def handle_message(message: Message):
-        """Handle plain text messages using LLM for intent routing."""
+        user_text = message.text or ""
         if not llm_client:
-            await message.answer("⚠️ LLM не настроен. Используйте команды (/start, /help, /health, /labs, /scores).")
+            await message.answer("⚠️ LLM not configured. Use slash commands.", reply_markup=main_keyboard())
             return
 
-        user_text = message.text or ""
-        classified = await llm_client.classify_intent(user_text)
-
-        if classified:
-            cmd, args = parse_command(classified)
-            response = await process_command(cmd, args, lms_client, llm_client)
-        else:
-            response = "⚠️ Я не понял ваш запрос. Попробуйте использовать команды (/help для списка)."
-
-        await message.answer(response)
+        try:
+            response = await llm_client.answer_with_tools(user_text, lms_client)
+            await message.answer(response, reply_markup=main_keyboard())
+        except Exception as e:
+            await message.answer(f"❌ Error: {e}", reply_markup=main_keyboard())
 
     print("Bot is running... Press Ctrl+C to stop.")
     await dp.start_polling(bot)
 
 
-def main() -> None:
-    """Main entry point."""
+def main():
     parser = argparse.ArgumentParser(description="LMS Telegram Bot")
-    parser.add_argument(
-        "--test",
-        type=str,
-        metavar="COMMAND",
-        help="Test mode: process command and print response (e.g., --test '/start')"
-    )
+    parser.add_argument("--test", type=str, metavar="COMMAND", help="Test mode: process command and print response")
     args = parser.parse_args()
 
     config = load_config()
 
     if args.test:
-        # Test mode
         try:
             asyncio.run(run_test_mode(args.test, config))
             sys.exit(0)
@@ -184,7 +196,6 @@ def main() -> None:
             print(f"Error: {e}")
             sys.exit(1)
     else:
-        # Normal Telegram bot mode
         asyncio.run(run_telegram_mode(config))
 
 
