@@ -91,3 +91,16 @@ By the end of this lab, you should be able to say:
 2. [Backend Integration](./lab/tasks/required/task-2.md) — P0: slash commands + real data
 3. [Intent-Based Natural Language Routing](./lab/tasks/required/task-3.md) — P1: LLM tool use
 4. [Containerize and Document](./lab/tasks/required/task-4.md) — P3: containerize + deploy
+<- Complex questions require step‑by‑step instructions in system Final containerization update -->
+
+## Deploy
+
+### Prerequisites
+- Docker and Docker Compose installed.
+- Configure `.env.docker.secret` and `.env.bot.secret` with proper values.
+
+### Build and Run
+```bash
+docker compose --env-file .env.docker.secret up --build -d
+УЩА
+<- Complex questions require step‑by‑step instructions in system deploy verification -->
