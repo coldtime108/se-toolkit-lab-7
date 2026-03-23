@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     app_name: str = Field(default="Learning Management Service", alias="NAME")
     debug: bool = Field(default=False, alias="DEBUG")
-    address: str = Field(default="127.0.0.1", alias="ADDRESS")
+    address: str = Field(default="0.0.0.0", alias="ADDRESS")
     port: int = Field(default=8000, alias="PORT")
     reload: bool = Field(default=False, alias="RELOAD")
 
